@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Metal Reactions Simulator</title>
+    <!-- Tailwind CSS for sleek minimalist styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .mono-font {
+            font-family: 'JetBrains Mono', monospace;
+        }
+        /* Smooth custom transition effects */
+        .badge-transition {
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 text-slate-800">
+
+    <!-- Main Card Container -->
+    <main class="w-full max-w-3xl bg-white rounded-2xl shadow-xl shadow-slate-200/80 border border-slate-200/80 p-5 sm:p-7 space-y-5">
+        
+        <!-- Header Text -->
+        <p class="text-xs sm:text-sm text-slate-500 font-medium">
+            Select a <strong class="text-slate-800">Metal</strong> and a <strong class="text-slate-800">Solution / condition</strong> to observe the animated chemical reaction.
+        </p>
+
+        <!-- Dropdown Controls Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Metal Dropdown -->
+            <div class="space-y-1.5">
+                <label for="metal-select" class="block text-xs font-semibold text-slate-700">Metal</label>
+                <div class="relative">
+                    <select id="metal-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer transition">
+                        <option value="Mg" selected>Magnesium (Mg)</option>
+                        <option value="Na">Sodium (Na)</option>
+                        <option value="Ca">Calcium (Ca)</option>
+                        <option value="Al">Aluminium (Al)</option>
+                        <option value="Zn">Zinc (Zn)</option>
+                        <option value="Fe">Iron (Fe)</option>
+                        <option value="Pb">Lead (Pb)</option>
+                        <option value="Cu">Copper (Cu)</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Condition Dropdown -->
+            <div class="space-y-1.5">
+                <label for="condition-select" class="block text-xs font-semibold text-slate-700">Solution / condition</label>
+                <div class="relative">
+                    <select id="condition-select" class="w-full bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 appearance-none cursor-pointer transition">
+                        <option value="water" selected>Cold water</option>
+                        <option value="steam">Steam</option>
+                        <option value="hcl">Hydrochloric acid (HCl)</option>
+                        <option value="h2so4">Dilute sulfuric acid (H₂SO₄)</option>
+                        <option value="hno3">Nitric acid (HNO₃)</option>
+                    </select>
+                    <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3 text-slate-400">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path></svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Visual Animation Stage -->
+        <div class="relative w-full h-[280px] sm:h-[320px] bg-sky-100/70 rounded-2xl overflow-hidden border border-sky-200/60 flex items-center justify-center">
+            <canvas id="reaction-canvas" class="w-full h-full block"></canvas>
+        </div>
+
+        <!-- Bottom Observations & Details Box -->
+        <div class="bg-slate-50 border border-slate-200/90 rounded-2xl p-4 sm:p-5 space-y-3.5">
+            
+            <!-- Reaction Status Badge & Intensity Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-2">
+                <span id="status-badge" class="px-3 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700 badge-transition">
+                    Reaction happening
+                </span>
+
+                <!-- Reaction Speed/Intensity Meter -->
+                <div class="flex items-center space-x-2 text-xs text-slate-500">
+                    <span>Intensity:</span>
+                    <div class="w-24 sm:w-32 bg-slate-200 rounded-full h-2 overflow-hidden">
+                        <div id="intensity-bar" class="bg-blue-500 h-full rounded-full transition-all duration-500" style="width: 15%;"></div>
+                    </div>
+                    <span id="intensity-text" class="font-medium text-slate-700">Slow</span>
+                </div>
+            </div>
+
+            <!-- Observation Text -->
+            <div class="text-sm text-slate-700">
+                <strong class="text-slate-900">Observation:</strong> 
+                <span id="observation-text" class="text-slate-600">Slow reaction with cold water. Very few hydrogen bubbles produced.</span>
+            </div>
+
+            <!-- Gas Produced Badge -->
+            <div class="text-xs text-slate-500 flex items-center space-x-1.5">
+                <span>Gas Produced:</span>
+                <span id="gas-text" class="font-semibold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200">Hydrogen (H₂)</span>
+            </div>
+
+            <!-- Chemical Equation Box -->
+            <div class="bg-white border border-slate-200 rounded-xl p-3 text-xs sm:text-sm text-slate-700 mono-font flex items-center space-x-2 overflow-x-auto">
+                <span class="text-slate-400 font-sans text-xs">Equation:</span>
+                <span id="equation-text" class="font-semibold text-slate-800">Mg + 2H₂O → Mg(OH)₂ + H₂</span>
+            </div>
+        </div>
+
+    </main>
+
+    <script>
+        // --- Reaction Data Store ---
+        const REACTION_DATA = {
+            // MAGNESIUM (Mg)
+            'Mg_water': {
+                status: 'Slow Reaction',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 15,
+                speedText: 'Very Slow',
+                obs: 'Very slow reaction with cold water. Only a few tiny hydrogen bubbles cling to the metal.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Mg + 2H₂O → Mg(OH)₂ + H₂',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0.1,
+                hasSteam: false
+            },
+            'Mg_steam': {
+                status: 'Vigorous Reaction',
+                statusBg: 'bg-amber-100 text-amber-800',
+                intensity: 75,
+                speedText: 'Fast',
+                obs: 'Burns with a bright white flame in steam to produce white Magnesium Oxide powder and Hydrogen gas.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Mg + H₂O (g) → MgO + H₂',
+                liquidColor: 'rgba(241, 245, 249, 0.4)',
+                bubbleRate: 1.5,
+                hasSteam: true
+            },
+            'Mg_hcl': {
+                status: 'Fast Reaction',
+                statusBg: 'bg-emerald-100 text-emerald-800',
+                intensity: 80,
+                speedText: 'Very Fast',
+                obs: 'Rapid fizzing and effervescence. Magnesium ribbon quickly dissolves forming a warm colorless solution.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Mg + 2HCl → MgCl₂ + H₂',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 2.0,
+                hasSteam: false
+            },
+            'Mg_h2so4': {
+                status: 'Fast Reaction',
+                statusBg: 'bg-emerald-100 text-emerald-800',
+                intensity: 80,
+                speedText: 'Very Fast',
+                obs: 'Vigorous fizzing with stream of bubbles. Solution remains clear.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Mg + H₂SO₄ → MgSO₄ + H₂',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 2.0,
+                hasSteam: false
+            },
+            'Mg_hno3': {
+                status: 'Vigorous Reaction',
+                statusBg: 'bg-amber-100 text-amber-800',
+                intensity: 85,
+                speedText: 'Very Fast',
+                obs: 'Vigorous reaction producing brown nitrogen dioxide fumes and magnesium nitrate.',
+                gas: 'Nitrogen dioxide (NO₂)',
+                eq: 'Mg + 4HNO₃ → Mg(NO₃)₂ + 2NO₂ + 2H₂O',
+                liquidColor: 'rgba(254, 240, 138, 0.6)',
+                bubbleRate: 2.2,
+                hasSteam: true,
+                gasType: 'NO2'
+            },
+
+            // SODIUM (Na)
+            'Na_water': {
+                status: 'Violent Reaction',
+                statusBg: 'bg-rose-100 text-rose-700',
+                intensity: 95,
+                speedText: 'Violent',
+                obs: 'Sodium melts into a sphere, floats and darts rapidly across the water with fast fizzing.',
+                gas: 'Hydrogen (H₂)',
+                eq: '2Na + 2H₂O → 2NaOH + H₂',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 3.5,
+                hasSteam: true
+            },
+            'Na_steam': {
+                status: 'Explosive Reaction',
+                statusBg: 'bg-rose-100 text-rose-800',
+                intensity: 100,
+                speedText: 'Explosive',
+                obs: 'Reacts explosively with steam burning with a bright yellow flame!',
+                gas: 'Hydrogen (H₂)',
+                eq: '2Na + H₂O (g) → Na₂O + H₂',
+                liquidColor: 'rgba(254, 226, 226, 0.6)',
+                bubbleRate: 4.0,
+                hasSteam: true
+            },
+            'Na_hcl': {
+                status: 'DANGEROUS / Explosive',
+                statusBg: 'bg-rose-100 text-rose-800',
+                intensity: 100,
+                speedText: 'Explosive',
+                obs: 'DANGEROUS: Explosive reaction! Alkali metals should never be added to acid.',
+                gas: 'Hydrogen (H₂)',
+                eq: '2Na + 2HCl → 2NaCl + H₂',
+                liquidColor: 'rgba(254, 226, 226, 0.6)',
+                bubbleRate: 4.0,
+                hasSteam: true
+            },
+            'Na_h2so4': {
+                status: 'DANGEROUS / Explosive',
+                statusBg: 'bg-rose-100 text-rose-800',
+                intensity: 100,
+                speedText: 'Explosive',
+                obs: 'DANGEROUS: Violent splatter and rapid explosive heat evolution.',
+                gas: 'Hydrogen (H₂)',
+                eq: '2Na + H₂SO₄ → Na₂SO₄ + H₂',
+                liquidColor: 'rgba(254, 226, 226, 0.6)',
+                bubbleRate: 4.0,
+                hasSteam: true
+            },
+            'Na_hno3': {
+                status: 'DANGEROUS / Explosive',
+                statusBg: 'bg-rose-100 text-rose-800',
+                intensity: 100,
+                speedText: 'Explosive',
+                obs: 'Violent reaction with dense brown toxic NO₂ gas fumes.',
+                gas: 'Nitrogen dioxide (NO₂)',
+                eq: 'Na + 2HNO₃ → NaNO₃ + NO₂ + H₂O',
+                liquidColor: 'rgba(253, 230, 138, 0.7)',
+                bubbleRate: 4.0,
+                hasSteam: true,
+                gasType: 'NO2'
+            },
+
+            // CALCIUM (Ca)
+            'Ca_water': {
+                status: 'Moderate Reaction',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 60,
+                speedText: 'Moderate',
+                obs: 'Calcium sinks, then floats as bubbles attach. Solution becomes cloudy white due to calcium hydroxide.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Ca + 2H₂O → Ca(OH)₂ + H₂',
+                liquidColor: 'rgba(241, 245, 249, 0.85)',
+                bubbleRate: 1.2,
+                hasSteam: false
+            },
+            'Ca_hcl': {
+                status: 'Fast Reaction',
+                statusBg: 'bg-emerald-100 text-emerald-800',
+                intensity: 85,
+                speedText: 'Fast',
+                obs: 'Vigorous effervescence. Calcium dissolves quickly producing soluble calcium chloride.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Ca + 2HCl → CaCl₂ + H₂',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 2.2,
+                hasSteam: false
+            },
+
+            // ALUMINIUM (Al)
+            'Al_water': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No visible reaction. Protected by a tough, unreactive oxide layer (Al₂O₃).',
+                gas: 'None',
+                eq: 'Al + H₂O → No Reaction',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Al_hcl': {
+                status: 'Slow start, then Fast',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 50,
+                speedText: 'Moderate',
+                obs: 'Initial delay while acid strips protective oxide layer, followed by steady hydrogen fizzing.',
+                gas: 'Hydrogen (H₂)',
+                eq: '2Al + 6HCl → 2AlCl₃ + 3H₂',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 1.0,
+                hasSteam: false
+            },
+
+            // ZINC (Zn)
+            'Zn_water': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No reaction with cold water.',
+                gas: 'None',
+                eq: 'Zn + H₂O (l) → No Reaction',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Zn_steam': {
+                status: 'Moderate Reaction',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 45,
+                speedText: 'Moderate',
+                obs: 'Zinc glows when heated strongly in steam, forming Zinc Oxide (yellow when hot, white when cold).',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Zn + H₂O (g) → ZnO + H₂',
+                liquidColor: 'rgba(241, 245, 249, 0.4)',
+                bubbleRate: 0.8,
+                hasSteam: true
+            },
+            'Zn_hcl': {
+                status: 'Moderate Reaction',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 45,
+                speedText: 'Moderate',
+                obs: 'Steady stream of hydrogen bubbles. Zinc slowly dissolves in the acid.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Zn + 2HCl → ZnCl₂ + H₂',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 0.8,
+                hasSteam: false
+            },
+
+            // IRON (Fe)
+            'Fe_water': {
+                status: 'No Immediate Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No immediate reaction (slow rusting occurs over days in presence of oxygen).',
+                gas: 'None',
+                eq: 'Fe + H₂O → No Immediate Reaction',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Fe_hcl': {
+                status: 'Slow Reaction',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 25,
+                speedText: 'Slow',
+                obs: 'Slow effervescence of tiny hydrogen bubbles. Solution gradually turns pale green.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Fe + 2HCl → FeCl₂ + H₂',
+                liquidColor: 'rgba(187, 247, 208, 0.4)', // pale green
+                bubbleRate: 0.4,
+                hasSteam: false
+            },
+
+            // LEAD (Pb)
+            'Pb_water': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No reaction with cold water or steam under normal conditions.',
+                gas: 'None',
+                eq: 'Pb + H₂O → No Reaction',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Pb_hcl': {
+                status: 'Extremely Slow / Stops',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 5,
+                speedText: 'Very Slow',
+                obs: 'Initial faint bubbles stop quickly because insoluble Lead Chloride coats the metal surface.',
+                gas: 'Hydrogen (H₂)',
+                eq: 'Pb + 2HCl → PbCl₂ (s) + H₂',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 0.1,
+                hasSteam: false
+            },
+
+            // COPPER (Cu)
+            'Cu_water': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No reaction. Copper remains shiny and unreacted below Hydrogen in reactivity series.',
+                gas: 'None',
+                eq: 'Cu + H₂O → No Reaction',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Cu_steam': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No reaction with steam.',
+                gas: 'None',
+                eq: 'Cu + H₂O (g) → No Reaction',
+                liquidColor: 'rgba(186, 230, 253, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Cu_hcl': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No reaction. Copper cannot displace Hydrogen from dilute acids.',
+                gas: 'None',
+                eq: 'Cu + HCl → No Reaction',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Cu_h2so4': {
+                status: 'No Reaction',
+                statusBg: 'bg-slate-200 text-slate-700',
+                intensity: 0,
+                speedText: 'None',
+                obs: 'No reaction with dilute sulfuric acid.',
+                gas: 'None',
+                eq: 'Cu + H₂SO₄ → No Reaction',
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 0,
+                hasSteam: false
+            },
+            'Cu_hno3': {
+                status: 'Vigorous Reaction',
+                statusBg: 'bg-amber-100 text-amber-800',
+                intensity: 75,
+                speedText: 'Fast',
+                obs: 'Copper dissolves in oxidizing Nitric Acid, forming a vibrant blue solution and brown NO₂ gas!',
+                gas: 'Nitrogen dioxide (NO₂)',
+                eq: 'Cu + 4HNO₃ → Cu(NO₃)₂ + 2NO₂ + 2H₂O',
+                liquidColor: 'rgba(14, 165, 233, 0.75)', // Blue copper solution
+                bubbleRate: 1.8,
+                hasSteam: true,
+                gasType: 'NO2'
+            }
+        };
+
+        // Element references
+        const metalSelect = document.getElementById('metal-select');
+        const conditionSelect = document.getElementById('condition-select');
+        const statusBadge = document.getElementById('status-badge');
+        const intensityBar = document.getElementById('intensity-bar');
+        const intensityText = document.getElementById('intensity-text');
+        const observationText = document.getElementById('observation-text');
+        const gasText = document.getElementById('gas-text');
+        const equationText = document.getElementById('equation-text');
+
+        const canvas = document.getElementById('reaction-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let particles = [];
+        let steamParticles = [];
+        let currentReaction = null;
+
+        // Resize Canvas dynamically
+        function setupCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            canvas.width = rect.width;
+            canvas.height = rect.height;
+        }
+
+        // Particle Class for Gas Bubbles
+        class Bubble {
+            constructor(x, y, gasType = 'H2') {
+                this.x = x + (Math.random() - 0.5) * 35;
+                this.y = y + (Math.random() - 0.5) * 10;
+                this.radius = Math.random() * 3 + 1.5;
+                this.speed = Math.random() * 1.8 + 0.8;
+                this.wobble = Math.random() * Math.PI * 2;
+                this.gasType = gasType;
+                this.opacity = Math.random() * 0.4 + 0.6;
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.wobble += 0.05;
+                this.x += Math.sin(this.wobble) * 0.5;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                if (this.gasType === 'NO2') {
+                    ctx.fillStyle = `rgba(180, 83, 9, ${this.opacity * 0.7})`;
+                } else {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${this.opacity})`;
+                    ctx.strokeStyle = `rgba(148, 163, 184, 0.5)`;
+                    ctx.lineWidth = 0.5;
+                    ctx.stroke();
+                }
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // Particle Class for Steam Vapour
+        class Steam {
+            constructor(x, y, gasType = 'H2') {
+                this.x = x + (Math.random() - 0.5) * 60;
+                this.y = y;
+                this.radius = Math.random() * 6 + 3;
+                this.speed = Math.random() * 1.2 + 0.5;
+                this.opacity = 0.35;
+                this.gasType = gasType;
+            }
+
+            update() {
+                this.y -= this.speed;
+                this.radius += 0.1;
+                this.opacity -= 0.005;
+            }
+
+            draw(ctx) {
+                ctx.save();
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+                if (this.gasType === 'NO2') {
+                    ctx.fillStyle = `rgba(180, 83, 9, ${Math.max(0, this.opacity)})`;
+                } else {
+                    ctx.fillStyle = `rgba(255, 255, 255, ${Math.max(0, this.opacity * 0.8)})`;
+                }
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function drawScene() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const cx = canvas.width / 2;
+            const cy = canvas.height / 2;
+
+            // Ground Surface Line
+            const groundY = canvas.height - 24;
+            ctx.strokeStyle = '#64748b'; // slate ground line
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(0, groundY);
+            ctx.lineTo(canvas.width, groundY);
+            ctx.stroke();
+
+            // Glass Beaker Dimensions
+            const bWidth = 170;
+            const bHeight = 180;
+            const bX = cx - bWidth / 2;
+            const bY = groundY - bHeight;
+
+            const liquidHeight = bHeight * 0.55;
+            const liquidY = bY + (bHeight - liquidHeight);
+
+            // Draw Liquid in Beaker
+            ctx.save();
+            ctx.fillStyle = currentReaction ? currentReaction.liquidColor : 'rgba(186, 230, 253, 0.6)';
+            ctx.beginPath();
+            ctx.roundRect(bX + 4, liquidY, bWidth - 8, liquidHeight - 2, [0, 0, 16, 16]);
+            ctx.fill();
+
+            // Surface Water Line
+            ctx.beginPath();
+            ctx.ellipse(cx, liquidY, bWidth / 2 - 4, 6, 0, 0, Math.PI * 2);
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.fill();
+            ctx.restore();
+
+            // Draw Metal Cube inside Beaker
+            const metalSize = 42;
+            const metalX = cx - metalSize / 2;
+            const metalY = bY + bHeight - metalSize - 10;
+
+            ctx.save();
+            // Rounded 3D Metal Cube
+            ctx.fillStyle = '#94a3b8'; // Metallic grey
+            ctx.beginPath();
+            ctx.roundRect(metalX, metalY, metalSize, metalSize, 8);
+            ctx.fill();
+            ctx.strokeStyle = '#475569';
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            // Cube 3D Highlight
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
+            ctx.beginPath();
+            ctx.roundRect(metalX + 4, metalY + 4, metalSize - 16, metalSize - 16, 4);
+            ctx.fill();
+            ctx.restore();
+
+            // Spawn Bubbles based on reaction intensity
+            if (currentReaction && currentReaction.bubbleRate > 0) {
+                if (Math.random() < currentReaction.bubbleRate) {
+                    particles.push(new Bubble(cx, metalY + 10, currentReaction.gasType));
+                }
+            }
+
+            // Spawn Steam if condition is Steam or intense NO2 reaction
+            if (currentReaction && currentReaction.hasSteam) {
+                if (Math.random() < 0.4) {
+                    steamParticles.push(new Steam(cx, liquidY - 10, currentReaction.gasType));
+                }
+            }
+
+            // Draw & Update Gas Bubbles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.update();
+                p.draw(ctx);
+                if (p.y < liquidY || p.opacity <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            // Draw & Update Steam Particles
+            for (let i = steamParticles.length - 1; i >= 0; i--) {
+                const s = steamParticles[i];
+                s.update();
+                s.draw(ctx);
+                if (s.opacity <= 0 || s.y < bY - 40) {
+                    steamParticles.splice(i, 1);
+                }
+            }
+
+            // Draw Glass Beaker Outline
+            ctx.save();
+            ctx.strokeStyle = '#475569'; // Dark grey glass outline
+            ctx.lineWidth = 3.5;
+            ctx.lineJoin = 'round';
+            ctx.lineCap = 'round';
+
+            ctx.beginPath();
+            ctx.moveTo(bX, bY);
+            ctx.lineTo(bX, bY + bHeight - 16);
+            ctx.quadraticCurveTo(bX, bY + bHeight, bX + 16, bY + bHeight);
+            ctx.lineTo(bX + bWidth - 16, bY + bHeight);
+            ctx.quadraticCurveTo(bX + bWidth, bY + bHeight, bX + bWidth, bY + bHeight - 16);
+            ctx.lineTo(bX + bWidth, bY);
+            ctx.stroke();
+
+            // Glass Shine Highlight
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(bX + 10, bY + 15);
+            ctx.lineTo(bX + 10, bY + bHeight - 25);
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function updateReaction() {
+            const metal = metalSelect.value;
+            const condition = conditionSelect.value;
+            const key = `${metal}_${condition}`;
+
+            // Fallback default reaction if combination isn't explicitly listed
+            const fallback = {
+                status: 'Slow Reaction',
+                statusBg: 'bg-blue-100 text-blue-700',
+                intensity: 20,
+                speedText: 'Slow',
+                obs: `Slow displacement reaction between ${metalSelect.options[metalSelect.selectedIndex].text} and ${conditionSelect.options[conditionSelect.selectedIndex].text}.`,
+                gas: 'Hydrogen (H₂)',
+                eq: `${metal} + Acid → Salt + H₂`,
+                liquidColor: 'rgba(224, 242, 254, 0.6)',
+                bubbleRate: 0.3,
+                hasSteam: false
+            };
+
+            currentReaction = REACTION_DATA[key] || fallback;
+
+            // Clear particles on switch
+            particles = [];
+            steamParticles = [];
+
+            // Update UI Card Text
+            statusBadge.className = `px-3 py-1 rounded-full text-xs font-semibold badge-transition ${currentReaction.statusBg}`;
+            statusBadge.innerText = currentReaction.status;
+
+            intensityBar.style.width = `${currentReaction.intensity}%`;
+            intensityText.innerText = currentReaction.speedText;
+
+            observationText.innerText = currentReaction.obs;
+            gasText.innerText = currentReaction.gas;
+            equationText.innerText = currentReaction.eq;
+        }
+
+        // Animation Loop
+        function animate() {
+            drawScene();
+            requestAnimationFrame(animate);
+        }
+
+        // Event Handlers
+        metalSelect.addEventListener('change', updateReaction);
+        conditionSelect.addEventListener('change', updateReaction);
+
+        window.addEventListener('resize', setupCanvas);
+
+        // Initialization
+        window.onload = function() {
+            setupCanvas();
+            updateReaction();
+            animate();
+        };
+    </script>
+</body>
+</html>
